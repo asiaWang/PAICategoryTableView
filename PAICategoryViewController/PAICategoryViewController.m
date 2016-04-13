@@ -52,8 +52,13 @@ typedef NS_ENUM(NSInteger,PAICategoryViewSelectedType) {
     NSArray *array2 = @[@"针织衫",@"卫衣",@"T恤",@"衬衫",@"上衣"];
     NSArray *array3 = @[@"鞋子",@"上装"];
     
+    self.data = [NSMutableArray array];
     self.firstLevelTitle = [NSArray arrayWithArray:array0];
-    
+    self.firstLevelSelectedCount = -1;
+    self.secondLevelSelectedCount = -1;
+    self.thirdLevelSelectedCount = -1;
+    self.selectedType = PAICategoryViewSelectedType_None;
+
     for (int i = 0; i < array0.count; i++) {
         NSMutableDictionary *dict = [NSMutableDictionary dictionary];
         for (int j = 0; j < array3.count; j++) {
@@ -65,9 +70,6 @@ typedef NS_ENUM(NSInteger,PAICategoryViewSelectedType) {
         }
         [self.data addObject:[NSDictionary dictionaryWithDictionary:dict]];
     }
-    
-    self.selectedType = PAICategoryViewSelectedType_None;
-    self.tabelViewCount = self.data.count;
     
     [self.view addSubview:self.tableView];
     [self.tableView reloadData];
@@ -83,7 +85,7 @@ typedef NS_ENUM(NSInteger,PAICategoryViewSelectedType) {
         self.tabelViewCount = self.data.count + dict.count;
     }else {
         NSDictionary *dict = self.data[self.firstLevelSelectedCount];
-        NSString *key = [[dict allKeys]objectAtIndex:self.secondLevelSelectedCount];
+        NSString *key = [[dict allKeys]objectAtIndex:(self.secondLevelSelectedCount)];
         NSArray *array = dict[key];
         self.tabelViewCount = self.data.count + dict.count + array.count;
     }
@@ -96,6 +98,69 @@ typedef NS_ENUM(NSInteger,PAICategoryViewSelectedType) {
     if (!cell) {
         cell = [[[NSBundle mainBundle]loadNibNamed:@"PAICategoryCell" owner:nil options:nil]lastObject];
     }
+    if (self.firstLevelSelectedCount == -1) {
+        [cell setCategoryCellLevels:PAICategoryCellType_FirstLevel selected:NO context:self.firstLevelTitle[indexPath.row] contextImage:nil];
+    }else {
+        NSDictionary *dict = self.data[self.firstLevelSelectedCount];
+        if (self.secondLevelSelectedCount == -1) {
+            // 表示第二级页面没有打开
+            if (indexPath.row <= self.firstLevelSelectedCount || indexPath.row > self.firstLevelSelectedCount + dict.count) {
+                if (indexPath.row <= self.firstLevelSelectedCount) {
+                    if (indexPath.row == self.firstLevelSelectedCount) {
+                        [cell setCategoryCellLevels:PAICategoryCellType_FirstLevel selected:YES context:self.firstLevelTitle[indexPath.row] contextImage:nil];
+                    }else {
+                        [cell setCategoryCellLevels:PAICategoryCellType_FirstLevel selected:NO context:self.firstLevelTitle[indexPath.row] contextImage:nil];
+                    }
+                }else {
+                    [cell setCategoryCellLevels:PAICategoryCellType_FirstLevel selected:NO context:self.firstLevelTitle[indexPath.row - dict.count ] contextImage:nil];
+                }
+            }else {
+                [cell setCategoryCellLevels:PAICategoryCellType_SecondLevel selected:NO context:[dict allKeys][indexPath.row - self.firstLevelSelectedCount -1] contextImage:nil];
+            }
+        }else {
+            // 表示第三级页面打开
+            NSString *key = [[dict allKeys]objectAtIndex:(self.secondLevelSelectedCount)];
+            NSArray *array = dict[key];
+            if (indexPath.row <= self.firstLevelSelectedCount || indexPath.row > self.firstLevelSelectedCount + dict.count + array.count) {
+                // 第一级显示
+                if (indexPath.row <= self.firstLevelSelectedCount) {
+                    if (indexPath.row == self.firstLevelSelectedCount) {
+                        [cell setCategoryCellLevels:PAICategoryCellType_FirstLevel selected:YES context:self.firstLevelTitle[indexPath.row] contextImage:nil];
+                    }else {
+                        [cell setCategoryCellLevels:PAICategoryCellType_FirstLevel selected:NO context:self.firstLevelTitle[indexPath.row] contextImage:nil];
+                    }
+                }else {
+                    [cell setCategoryCellLevels:PAICategoryCellType_FirstLevel selected:NO context:self.firstLevelTitle[indexPath.row - dict.count - array.count ] contextImage:nil];
+                }
+            }else {
+                NSInteger realSecondSelectedIndex = self.firstLevelSelectedCount + self.secondLevelSelectedCount + 1;
+                if ( (indexPath.row > self.firstLevelSelectedCount && indexPath.row <= realSecondSelectedIndex) || indexPath.row > realSecondSelectedIndex + array.count) {
+                    // 第二级显示
+                    if (indexPath.row == realSecondSelectedIndex) {
+                        [cell setCategoryCellLevels:PAICategoryCellType_SecondLevel selected:YES context:[dict allKeys][indexPath.row - self.firstLevelSelectedCount - 1] contextImage:nil];
+                    }else {
+                        if (indexPath.row > self.firstLevelSelectedCount && indexPath.row < realSecondSelectedIndex) {
+                            [cell setCategoryCellLevels:PAICategoryCellType_SecondLevel selected:NO context:[dict allKeys][indexPath.row - self.firstLevelSelectedCount -1] contextImage:nil];
+                        }else {
+                            [cell setCategoryCellLevels:PAICategoryCellType_SecondLevel selected:NO context:[dict allKeys][indexPath.row - realSecondSelectedIndex - array.count ] contextImage:nil];
+                        }
+                    }
+                }else {
+                    // 第三级显示
+                    if (self.thirdLevelSelectedCount == -1) {
+                        [cell setCategoryCellLevels:PAICategoryCellType_ThirdLevel selected:NO context:array[indexPath.row - realSecondSelectedIndex -1] contextImage:nil];
+                    }else {
+                        if (indexPath.row == self.thirdLevelSelectedCount) {
+                            [cell setCategoryCellLevels:PAICategoryCellType_ThirdLevel selected:YES context:array[indexPath.row - realSecondSelectedIndex -1 ] contextImage:nil];
+                        }else {
+                            [cell setCategoryCellLevels:PAICategoryCellType_ThirdLevel selected:NO context:array[indexPath.row - realSecondSelectedIndex -1] contextImage:nil];
+                        }
+                    }
+                }
+            }
+            
+        }
+    }
     return cell;
 }
 
@@ -104,7 +169,7 @@ typedef NS_ENUM(NSInteger,PAICategoryViewSelectedType) {
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-        
+    
     
     // 第一级选择只有一种情况,跳转到第二级
     if (self.selectedType == PAICategoryViewSelectedType_FirstLevel || self.selectedType == PAICategoryViewSelectedType_None) {
@@ -119,6 +184,8 @@ typedef NS_ENUM(NSInteger,PAICategoryViewSelectedType) {
         
         if (indexPath.row < self.firstLevelSelectedCount) {
             self.firstLevelSelectedCount = indexPath.row;
+            self.secondLevelSelectedCount = -1;
+            self.thirdLevelSelectedCount = -1;
             self.selectedType = PAICategoryViewSelectedType_SecondLevel;
             [self.tableView reloadData];
             return;
@@ -126,16 +193,22 @@ typedef NS_ENUM(NSInteger,PAICategoryViewSelectedType) {
         
         if (self.selectedType == PAICategoryViewSelectedType_SecondLevel) {
             NSDictionary *dict = self.data[self.firstLevelSelectedCount];
-    
             if (indexPath.row == self.firstLevelSelectedCount || indexPath.row > self.firstLevelSelectedCount + dict.count) {
                 self.secondLevelSelectedCount = -1;
-                self.selectedType = PAICategoryViewSelectedType_FirstLevel;
-                self.firstLevelSelectedCount = -1;
+                self.thirdLevelSelectedCount = -1;
+                if (indexPath.row == self.firstLevelSelectedCount) {
+                    self.selectedType = PAICategoryViewSelectedType_FirstLevel;
+                    self.firstLevelSelectedCount = -1;
+                }else {
+                    self.selectedType = PAICategoryViewSelectedType_SecondLevel;
+                    self.firstLevelSelectedCount = indexPath.row - dict.count ;
+                }
                 [self.tableView reloadData];
                 return;
             }
-            if ( self.firstLevelSelectedCount < indexPath.row && indexPath.row < self.firstLevelSelectedCount + dict.count) {
-                self.secondLevelSelectedCount = indexPath.row;
+            if ( self.firstLevelSelectedCount < indexPath.row && indexPath.row <= self.firstLevelSelectedCount + dict.count) {
+                self.secondLevelSelectedCount = indexPath.row - self.firstLevelSelectedCount -1;
+                self.thirdLevelSelectedCount = -1;
                 self.selectedType = PAICategoryViewSelectedType_ThirdLevel;
                 [self.tableView reloadData];
                 return;
@@ -143,37 +216,56 @@ typedef NS_ENUM(NSInteger,PAICategoryViewSelectedType) {
         }
         if (self.selectedType == PAICategoryViewSelectedType_ThirdLevel) {
             NSDictionary *dict = self.data[self.firstLevelSelectedCount];
-            NSArray *array = [[dict allKeys]objectAtIndex:self.secondLevelSelectedCount - self.firstLevelSelectedCount];
-            if (indexPath.row == self.firstLevelSelectedCount || indexPath.row > self.firstLevelSelectedCount + dict.count + array.count) {
+            NSString *key = [[dict allKeys]objectAtIndex:self.secondLevelSelectedCount];
+            NSArray *array = dict[key];
+
+            if (indexPath.row <= self.firstLevelSelectedCount || indexPath.row > self.firstLevelSelectedCount + dict.count + array.count) {
                 self.secondLevelSelectedCount = -1;
-                self.selectedType = PAICategoryViewSelectedType_FirstLevel;
-                self.firstLevelSelectedCount = -1;
                 self.thirdLevelSelectedCount = -1;
+                if (indexPath.row <= self.firstLevelSelectedCount) {
+                    if (indexPath.row == self.firstLevelSelectedCount) {
+                        self.firstLevelSelectedCount = -1;
+                        self.selectedType = PAICategoryViewSelectedType_FirstLevel;
+                    }else {
+                        self.firstLevelSelectedCount = indexPath.row;
+                        self.selectedType = PAICategoryViewSelectedType_SecondLevel;
+                    }
+                }else {
+                    self.firstLevelSelectedCount = indexPath.row - dict.count - array.count;
+                    self.selectedType = PAICategoryViewSelectedType_SecondLevel;
+                }
                 [self.tableView reloadData];
                 return;
             }
             
-            if (indexPath.row == self.secondLevelSelectedCount) {
+            NSInteger realSecondSelectedIndex = self.firstLevelSelectedCount + self.secondLevelSelectedCount + 1;
+            if (indexPath.row == realSecondSelectedIndex) {
                 self.selectedType = PAICategoryViewSelectedType_SecondLevel;
                 self.thirdLevelSelectedCount = -1;
+                self.secondLevelSelectedCount = -1;
                 [self.tableView reloadData];
                 return;
             }
             
-            if ((indexPath.row > self.firstLevelSelectedCount && indexPath.row < self.secondLevelSelectedCount) || (indexPath.row > self.secondLevelSelectedCount + array.count && indexPath.row < self.firstLevelSelectedCount + dict.count + array.count)) {
-                self.secondLevelSelectedCount = indexPath.row;
+            // 点击选择二级分类
+            if ((indexPath.row > self.firstLevelSelectedCount && indexPath.row < realSecondSelectedIndex) || (indexPath.row > realSecondSelectedIndex + array.count && indexPath.row <= self.firstLevelSelectedCount + dict.count + array.count)) {
+                if (indexPath.row > self.firstLevelSelectedCount && indexPath.row < realSecondSelectedIndex) {
+                    self.secondLevelSelectedCount = indexPath.row - self.firstLevelSelectedCount -1;
+                }else {
+                    self.secondLevelSelectedCount = indexPath.row - realSecondSelectedIndex - array.count;
+                }
                 self.thirdLevelSelectedCount = -1;
                 [self.tableView reloadData];
                 return;
             }
             
-            if (indexPath.row > self.secondLevelSelectedCount && indexPath.row < self.secondLevelSelectedCount + array.count) {
+            if (indexPath.row > realSecondSelectedIndex && indexPath.row <= realSecondSelectedIndex + array.count) {
                 self.thirdLevelSelectedCount = indexPath.row;
                 [self.tableView reloadData];
                 return;
             }
         }
-
+        
     }
     
     [self.tableView reloadData];

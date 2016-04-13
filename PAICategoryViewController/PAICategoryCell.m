@@ -9,8 +9,8 @@
 #import "PAICategoryCell.h"
 
 @interface PAICategoryCell()
-@property (weak, nonatomic) IBOutlet UIImageView *imaeHeadView;
-@property (weak, nonatomic) IBOutlet UILabel *categoryContextLabel;
+@property (strong, nonatomic)  UIImageView *imaeHeadView;
+@property (strong, nonatomic)  UILabel *categoryContextLabel;
 @property (weak, nonatomic) IBOutlet UIImageView *imageContextView;
 @property (nonatomic,assign,readwrite)PAICategoryCellType categoryCellType;
 
@@ -21,6 +21,13 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
+    
+    self.imaeHeadView = [[UIImageView alloc] init];
+    self.imaeHeadView.backgroundColor = [UIColor greenColor];
+    [self.contentView addSubview:self.imaeHeadView];
+    
+    self.categoryContextLabel = [[UILabel alloc] init];
+    [self.contentView addSubview:self.categoryContextLabel];
 }
 
 - (void)setCategoryCellLevels:(PAICategoryCellType)level selected:(BOOL)selected context:(NSString *)context contextImage:(NSString *)contextImageUrl {
@@ -29,8 +36,8 @@
     
     switch (self.categoryCellType) {
         case PAICategoryCellType_FirstLevel:{
-            self.imaeHeadView.frame = CGRectMake(25, self.frame.size.height / 2 - 22, 22, 22);
-            self.categoryContextLabel.frame = CGRectMake(self.imaeHeadView.frame.size.width + 15, self.frame.size.height / 2 - 20, 160, 40);
+            self.imaeHeadView.frame = CGRectMake(25, self.contentView.frame.size.height / 2 - 11, 22, 22);
+            self.categoryContextLabel.frame = CGRectMake(self.imaeHeadView.frame.origin.x +  self.imaeHeadView.frame.size.width + 15, self.contentView.frame.size.height / 2 - 20, 160, 40);
             if (selected) {
                 [self.imaeHeadView setImage:[UIImage imageNamed:@""]];
             }else {
@@ -39,8 +46,8 @@
         }
             break;
         case PAICategoryCellType_SecondLevel:{
-            self.imaeHeadView.frame = CGRectMake(25 + 22, self.frame.size.height / 2 - 22, 22, 22);
-            self.categoryContextLabel.frame = CGRectMake(self.imaeHeadView.frame.size.width + 15, self.frame.size.height / 2 - 20, 160, 40);
+            self.imaeHeadView.frame = CGRectMake(25 + 22, self.contentView.frame.size.height / 2 - 11, 22, 22);
+            self.categoryContextLabel.frame = CGRectMake(self.imaeHeadView.frame.origin.x + self.imaeHeadView.frame.size.width + 15, self.contentView.frame.size.height / 2 - 20, 160, 40);
             if (selected) {
                 [self.imaeHeadView setImage:[UIImage imageNamed:@""]];
             }else {
@@ -49,8 +56,8 @@
         }
             break;
         case PAICategoryCellType_ThirdLevel:{
-            self.imaeHeadView.frame = CGRectMake(25 + 44, self.frame.size.height / 2 - 22, 22, 22);
-            self.categoryContextLabel.frame = CGRectMake(self.imaeHeadView.frame.size.width + 15, self.frame.size.height / 2 - 20, 160, 40);
+            self.imaeHeadView.frame = CGRectMake(25 + 44, self.contentView.frame.size.height / 2 - 11, 22, 22);
+            self.categoryContextLabel.frame = CGRectMake(self.imaeHeadView.frame.origin.x + self.imaeHeadView.frame.size.width + 15, self.contentView.frame.size.height / 2 - 20, 160, 40);
             if (selected) {
                 [self.imaeHeadView setImage:[UIImage imageNamed:@""]];
             }else {
@@ -73,7 +80,12 @@
 //        default:
 //            break;
 //    }
+    if (selected) {
+        self.imaeHeadView.backgroundColor = [UIColor redColor];
+    }else {
+        self.imaeHeadView.backgroundColor = [UIColor greenColor];
 
+    }
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
